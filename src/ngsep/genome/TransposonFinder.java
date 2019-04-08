@@ -26,6 +26,10 @@ public class TransposonFinder {
 		
 	private Map<String, List<GenomicRegion>> STRs;
 	
+	private Map<String, List<GenomicRegion>> filteredKmers;
+	
+	private Map<String, List<GenomicRegion>> crossRegions;
+	
 	private Distribution distrHits = new Distribution(0, 100, 1);
 		
 	private int lengthKmer;
@@ -43,6 +47,7 @@ public class TransposonFinder {
 		}
 		
 		// TODO: Check if the regions found belong to a STR
+		findCrossGenomicRegions(filteredKmers, STRs);
 		
 		// TODO: Map the regions to see if they are candidates to be a TR or not
 		
@@ -51,18 +56,62 @@ public class TransposonFinder {
 		// TODO: Save the LTR in a text file
 	}
 	
+	/**
+	 * Cross the information between the over-represented genomic regions and the known STRs
+	 * @param genomicRegions Over-represented genomic regions
+	 * @param knownSTRs Known STRs
+	 */
+	public void findCrossGenomicRegions(Map<String, List<GenomicRegion>> genomicRegions, Map<String, List<GenomicRegion>> knownSTRs) {
+		for(String seq: genomicRegions.keySet()) {
+			List<GenomicRegion> overRepresented = genomicRegions.get(seq);
+			List<GenomicRegion> actSTRs = knownSTRs.get(seq);
+			for(GenomicRegion act: overRepresented) {
+				//TODO: Preguntarle a jorge si un substring cuenta
+			}
+		}
+	}
+	
+	/**
+	 * Process a sequence in the genome finding the over-represented genomic regions
+	 * @param seq Actual sequence in the genome
+	 * @param name Name of the sequence
+	 * @param fm FM index of the whole genome
+	 */
 	public void processSequence(CharSequence seq, String name, ReferenceGenomeFMIndex fm) {
 		System.out.printf("Processing Sequence %s \n", name);
+		List<GenomicRegion> repetitiveRegions = new ArrayList();
+		boolean seen = false;
+		int count = 0; // Count of intermediate kmers that are not over-represented
+		int maxCount = 2; // TODO: Preguntarle a jorge cuantos skip deberiamos tener
+		GenomicRegionImpl actGenomicRegion = null;
 		//Subsequence 20bp
 		for (int i = 0; i + lengthKmer < seq.length(); i+=10) {
 			CharSequence kmer = seq.subSequence(i, (i+lengthKmer));
 			List<ReadAlignment> hits = fm.search(kmer.toString());
 			distrHits.processDatapoint(hits.size());
+			// If the kmer is more than the min hit size
 			if(hits.size() > minHitSize ) {
-				// If the kmer is more than the min hit size
-				// TODO: Start generating regions where there's an overrepresentation of the kmer
+				if(!seen) {
+					actGenomicRegion = new GenomicRegionImpl(name, i, (i+lengthKmer));
+					seen = true;
+				}
+				else if (seen && count <= maxCount) {
+					actGenomicRegion.setLast((i+lengthKmer));					
+				}
+			}
+			else if(seen) {
+				count ++;
+			}
+			if(count > maxCount) {
+				seen = false;
+				// TODO: Preguntar a Jorge si dejamos esta condicion
+				if(actGenomicRegion.length() > (lengthKmer + 1)) { 
+					repetitiveRegions.add(actGenomicRegion);
+				}
 			}
 		}
+		System.out.println(repetitiveRegions.size());
+		filteredKmers.put(name, repetitiveRegions);
 	}
 
 	public static void main(String[] args) throws IOException {
@@ -75,9 +124,10 @@ public class TransposonFinder {
 		// Put as "arguments" kmer length and min hit size
 		instance.lengthKmer = 20;
 		instance.minHitSize = 10;
+		instance.filteredKmers = new HashMap();
+		instance.crossRegions = new HashMap();
 		// FM Index
 		instance.fm = new ReferenceGenomeFMIndex(instance.genome);
-		
 		// Find transposable elements
 		instance.run();
 	}
