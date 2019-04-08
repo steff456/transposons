@@ -51,6 +51,7 @@ public class TransposonFinder {
 		
 		// TODO: Map the regions to see if they are candidates to be a TR or not
 		
+		
 		// TODO: Check the form of LRT in the candidates
 		
 		// TODO: Save the LTR in a text file
@@ -66,7 +67,8 @@ public class TransposonFinder {
 			List<GenomicRegion> overRepresented = genomicRegions.get(seq);
 			List<GenomicRegion> actSTRs = knownSTRs.get(seq);
 			for(GenomicRegion act: overRepresented) {
-				//TODO: Preguntarle a jorge si un substring cuenta
+				//TODO: Preguntarle a jorge si estoy dentro de un STR cuenta
+				
 			}
 		}
 	}
