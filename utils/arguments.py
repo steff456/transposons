@@ -9,12 +9,13 @@ def get_args():
         description='Evaluation arguments for LTR elements.')
 
     # Personal settings
-    route_pred = '/Data/results/LTR_yeast.txt'
-    route_gt = '/Data/yeast/S288C_20150113_annRepeats.txt'
+    pred = '/Users/tefa/Documents/Transposones/Data/results/LTR_yeast.txt'
+    gt = '/Users/tefa/Documents/Transposones/Data/yeast/' + \
+         'S288C_20150113_annRepeats.txt'
 
-    parser.add_argument('--pred', type=str, default=route_pred,
+    parser.add_argument('--pred', type=str, default=pred,
                         help='path to the prediction file')
-    parser.add_argument('--gt', type=str, default=route_gt,
+    parser.add_argument('--gt', type=str, default=gt,
                         help='path to the groundtruth file')
 
     return parser.parse_args()
