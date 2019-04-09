@@ -1,7 +1,6 @@
 """Evaluation code for LTR."""
 from models.transposon import Transposon
 from utils.arguments import get_args
-import pdb
 
 
 def process_file(filename, mode='gt'):
