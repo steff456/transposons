@@ -4,8 +4,8 @@ class Transposon():
     def __init__(self, seq_name, first, last):
         """Construct for the transposon instance."""
         self.sequence_name = seq_name
-        self.first = first
-        self.last = last
+        self.first = int(first)
+        self.last = int(last)
 
     def set_sequence_name(self, seq_name):
         """Set sequence name."""
@@ -23,6 +23,6 @@ class Transposon():
         """Get size of the element."""
         return self.last - self.first + 1
 
-    def to_string(self):
+    def __str__(self):
         """Write the transposon data as string"""
         return self.sequence_name + '\t' + self.first + '\t' + self.last
