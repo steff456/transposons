@@ -11,16 +11,14 @@ def process_file(filename, mode='gt'):
     act_name = ''
     for line in f.readlines():
         if mode == 'gt':
-            if 'long_terminal_repeat' in line or 'LTR' in line:
-                data = line.split('\t')
-                if act_name != data[0]:
-                    act_LTRs = []
-                    act_name = data[0]
-                    act_LTRs.append(Transposon(data[0], data[1], data[2]))
-                    LTRs[act_name] = act_LTRs
-                else:
-                    LTRs[act_name].append(Transposon(data[0],
-                                                     data[1], data[2]))
+            data = line.split('\t')
+            if act_name != data[0]:
+                act_LTRs = []
+                act_name = data[0]
+                act_LTRs.append(Transposon(data[0], data[1], data[2]))
+                LTRs[act_name] = act_LTRs
+            else:
+                LTRs[act_name].append(Transposon(data[0], data[1], data[2]))
         else:
             data = line.split('\t')
             if act_name != data[0]:
