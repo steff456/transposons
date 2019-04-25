@@ -11,7 +11,7 @@ def get_args():
     # Personal settings
     pred = '/Users/tefa/Documents/Transposones/Data/results/yeast_STR.txt'
     gt = '/Users/tefa/Documents/Transposones/Data/yeast/' + \
-         'S288C_20150113_annRepeats.txt'
+         'gt_transposons.txt'
 
     parser.add_argument('--pred', type=str, default=pred,
                         help='path to the prediction file')

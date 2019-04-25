@@ -19,6 +19,21 @@ class Transposon():
         """Set last."""
         self.last = last
 
+    def is_overlap(self, transposon):
+        """Verify if there's an overlap with another transposon."""
+        if self.first <= transposon.last <= self.last:
+            return True
+        elif self.first <= transposon.first <= self.last:
+            return True
+        else:
+            return False
+
+    def get_overlap(self, transposon):
+        """Get the size of overlap with another transposon."""
+        end = min(self.last, transposon.last)
+        start = max(self.first, transposon.first)
+        return end - start + 1
+
     def __len__(self):
         """Get size of the element."""
         return self.last - self.first + 1
