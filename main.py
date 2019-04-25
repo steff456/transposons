@@ -38,6 +38,7 @@ def compare(gt, pred):
     precision = []  # Avg precision in all the genome
     recall = []  # Avg recall in all the genome
     total_gt = 0  # Total number of transposons in the gt file
+    total_pred = 0  # Total number of transposons in the pred file
 
     for seq_name in gt.keys():
         act_gt = gt[seq_name]
@@ -66,14 +67,18 @@ def compare(gt, pred):
             else:
                 gt_index += 1
         total_gt += len(act_gt)
+        total_pred += len(act_pred)
 
     avg_recall = mean(recall)
     avg_precision = mean(precision)
     f_measure = (2*avg_precision*avg_recall)/(avg_precision+avg_recall)
 
+    print('------------ Results of evaluation --------------')
     print('Recall: {}'.format(avg_recall))
     print('Precision: {}'.format(avg_precision))
     print('F-measure: {}'.format(f_measure))
+    print('Total groundtruth elements: {}'.format(total_gt))
+    print('Total predicted elements: {}'.format(total_pred))
 
 
 def main():
