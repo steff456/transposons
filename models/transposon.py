@@ -19,7 +19,7 @@ class Transposon():
     def set_last(self, last):
         """Set last."""
         self.last = last
-    
+
     def set_score(self, score):
         """Set score."""
         self.score = score

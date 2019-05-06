@@ -1,5 +1,6 @@
 """Evaluation code for LTR."""
 import numpy as np
+from heapq import heappush
 import matplotlib.pyplot as plt
 from models.transposon import Transposon
 from utils.arguments import get_args
@@ -16,11 +17,16 @@ def process_file(filename, mode='gt'):
         if act_name != data[0]:
             act_LTRs = []
             act_name = data[0]
-            act_LTRs.append(Transposon(data[0], data[1], data[2], data[3]))
+            if mode == 'gt':
+                act_LTRs.append(Transposon(data[0], data[1], data[2], 0))
+            else:
+                act_LTRs.append(Transposon(data[0], data[1], data[2], data[3]))
             LTRs[act_name] = act_LTRs
         else:
-            LTRs[act_name].append(Transposon(data[0], data[1], data[2],
-                                             data[3]))
+            if mode == 'gt':
+                act_LTRs.append(Transposon(data[0], data[1], data[2], 0))
+            else:
+                act_LTRs.append(Transposon(data[0], data[1], data[2], data[3]))
     f.close()
     return LTRs
 
@@ -59,36 +65,65 @@ def get_single_instance_results(gts, preds, thresh):
     return tp, fp, fn
 
 
-def calculate_metrics(gt, pred):
+def calculate_metrics(gt, pred, thresh=0.5):
     """Calculate the cumulative PR values for different thresholds."""
-    thresholds = np.linspace(0.01, 1, 100)
-    precisions = []
-    recalls = []
     names = list(set(gt.keys()).union(set(pred.keys())))
-    for thresh in thresholds:
-        cum_tp, cum_fp, cum_fn = 0, 0, 0
-        for seq_name in names:
-            if seq_name not in pred:
-                cum_fn += len(gt[seq_name])
-                continue
-            elif seq_name not in gt:
-                cum_fp += len(pred[seq_name])
-                continue
-            act_gt = gt[seq_name]
-            act_pred = pred[seq_name]
-            tp, fp, fn = get_single_instance_results(act_gt, act_pred, thresh)
-            cum_tp += tp
-            cum_fp += fp
-            cum_fn += fn
-            print(cum_tp, cum_fp, cum_fn)
+    cum_tp, cum_fp, cum_fn = 0, 0, 0
+    for seq_name in names:
+        if seq_name not in pred:
+            cum_fn += len(gt[seq_name])
+            continue
+        elif seq_name not in gt:
+            cum_fp += len(pred[seq_name])
+            continue
+        act_gt = gt[seq_name]
+        act_pred = pred[seq_name]
+        tp, fp, fn = get_single_instance_results(act_gt, act_pred, thresh)
+        precision = calculate_precision(tp, fp)
+        recall = calculate_recall(tp, fn)
+        print('----------- {} -----------'.format(seq_name))
+        print('TP:', tp, 'FP:', fp, 'FN:', fn)
+        print('precision', precision)
+        print('recall', recall)
+        print('F-measure', calculate_fmeasure(precision, recall))
         print('-----------')
-        print('threshold', thresh)
-        print('precision', cum_tp/(cum_tp + cum_fp + 1e-9))
-        print('recall', cum_tp/(cum_tp + cum_fn + 1e-9))
-        print('-----------')
-        precisions.append(cum_tp/(cum_tp + cum_fp + 1e-9))
-        recalls.append(cum_tp/(cum_tp + cum_fn + 1e-9))
-    return precisions, recalls
+        cum_tp += tp
+        cum_fp += fp
+        cum_fn += fn
+    precision = calculate_precision(cum_tp, cum_fp)
+    recall = calculate_recall(cum_tp, cum_fn)
+    print('-----------')
+    print('TP:', cum_tp, 'FP:', cum_fp, 'FN:', cum_fn)
+    print('threshold', thresh)
+    print('precision', precision)
+    print('recall', recall)
+    print('F-measure', calculate_fmeasure(precision, recall))
+    print('-----------')
+
+
+def calculate_precision(tp, fp):
+    """Calculate precision metric given TP and FP."""
+    return tp/(tp + fp + 1e-9)
+
+
+def calculate_recall(tp, fn):
+    """Calculate recall metric given TP and FN."""
+    return tp/(tp + fn + 1e-9)
+
+
+def calculate_fmeasure(precision, recall):
+    return (2*precision*recall)/(precision + recall + 1e-9)
+
+
+def get_preds_scores_map(preds):
+    """Get the scores for the predictions in ascending order."""
+    genome_scores = {}
+    for name in preds:
+        scores = []
+        for act in preds[name]:
+            heappush(scores, (act.score, act))
+        genome_scores[name] = scores
+    return genome_scores
 
 
 def plot_PR(precisions, recalls):
@@ -117,9 +152,7 @@ def main():
     gt = process_file(args.gt)
     pred = process_file(args.pred, mode='pred')
 
-    precisions, recalls = calculate_metrics(gt, pred)
-
-    plot_PR(precisions, recalls)
+    calculate_metrics(gt, pred)
 
 
 # Run main
