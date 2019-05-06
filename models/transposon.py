@@ -1,11 +1,12 @@
 class Transposon():
     """Handle a transposon object."""
 
-    def __init__(self, seq_name, first, last):
+    def __init__(self, seq_name, first, last, score):
         """Construct for the transposon instance."""
         self.sequence_name = seq_name
         self.first = int(first)
         self.last = int(last)
+        self.score = int(score)
 
     def set_sequence_name(self, seq_name):
         """Set sequence name."""
@@ -18,6 +19,10 @@ class Transposon():
     def set_last(self, last):
         """Set last."""
         self.last = last
+    
+    def set_score(self, score):
+        """Set score."""
+        self.score = score
 
     def is_overlap(self, transposon):
         """Verify if there's an overlap with another transposon."""
