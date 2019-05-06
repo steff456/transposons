@@ -30,6 +30,8 @@ class Transposon():
 
     def get_overlap(self, transposon):
         """Get the size of overlap with another transposon."""
+        if not self.is_overlap(transposon):
+            return 0
         end = min(self.last, transposon.last)
         start = max(self.first, transposon.first)
         return end - start + 1

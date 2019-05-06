@@ -1,7 +1,8 @@
 """Evaluation code for LTR."""
+import numpy as np
+import matplotlib.pyplot as plt
 from models.transposon import Transposon
 from utils.arguments import get_args
-from statistics import mean 
 
 
 def process_file(filename, mode='gt'):
@@ -33,52 +34,45 @@ def process_file(filename, mode='gt'):
     return LTRs
 
 
-def compare(gt, pred):
-    """Find overlap in the gt and predicted sites."""
-    precision = []  # Avg precision in all the genome
-    recall = []  # Avg recall in all the genome
-    total_gt = 0  # Total number of transposons in the gt file
-    total_pred = 0  # Total number of transposons in the pred file
+def get_single_instance_results(gts, preds, thresh):
+    """Calculate the tp, fp, fn for a given chromosome."""
+    tp = 0
+    for pred in preds:
+        for gt in gts:
+            act_overlap = pred.get_overlap(gt)
+            if act_overlap >= thresh:
+                tp += 1
+    fp = len(preds) - tp
+    fn = len(gts) - tp
+    return tp, fp, fn
 
-    for seq_name in gt.keys():
-        act_gt = gt[seq_name]
-        if seq_name not in pred:
-            total_gt += len(act_gt)
-            continue
-        act_pred = pred[seq_name]
-        gt_index = 0
-        pred_index = 0
-        while gt_index < len(act_gt) - 1:
-            if pred_index > len(act_pred) - 1:
-                break
-            gt_TE = act_gt[gt_index]
-            pred_TE = act_pred[pred_index]
-            # Calculate all the metrics for the act pair if there's an overlap
-            overlap = gt_TE.is_overlap(pred_TE)
-            if overlap:
-                size_o = gt_TE.get_overlap(pred_TE)
-                recall.append(size_o/len(gt_TE))
-                precision.append(size_o/len(pred_TE))
-                pred_index += 1
-                gt_index += 1
-            # Advance condition
-            elif pred_TE.first < gt_TE.first:
-                pred_index += 1
-            else:
-                gt_index += 1
-        total_gt += len(act_gt)
-        total_pred += len(act_pred)
 
-    avg_recall = mean(recall)
-    avg_precision = mean(precision)
-    f_measure = (2*avg_precision*avg_recall)/(avg_precision+avg_recall)
+def calculate_metrics(gt, pred):
+    """Calculate the cumulative PR values for different thresholds."""
+    thresholds = np.linspace(0.5, 1, 20)
+    precisions = []
+    recalls = []
+    for thresh in thresholds:
+        cum_tp, cum_fp, cum_fn = 0, 0, 0
+        for seq_name in gt.keys():
+            act_gt = gt[seq_name]
+            act_pred = pred[seq_name]
+            tp, fp, fn = get_single_instance_results(act_gt, act_pred, thresh)
+            cum_tp += tp
+            cum_fp += fp
+            cum_fn += fn
+        precisions.append(cum_tp/(cum_tp + cum_fp + 1e-9))
+        recalls.append(cum_tp/(cum_tp + cum_fn + 1e-9))
+    return precisions, recalls
 
-    print('------------ Results of evaluation --------------')
-    print('Recall: {}'.format(avg_recall))
-    print('Precision: {}'.format(avg_precision))
-    print('F-measure: {}'.format(f_measure))
-    print('Total groundtruth elements: {}'.format(total_gt))
-    print('Total predicted elements: {}'.format(total_pred))
+
+def plot_PR(precisions, recalls):
+    """Plot precision-recall curve."""
+    plt.plot(recalls, precisions)
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.title('Precision Recall Curve for Transposon Detection')
+    plt.show()
 
 
 def main():
@@ -94,7 +88,9 @@ def main():
     gt = process_file(args.gt)
     pred = process_file(args.pred, mode='pred')
 
-    compare(gt, pred)
+    precisions, recalls = calculate_metrics(gt, pred)
+
+    plot_PR(precisions, recalls)
 
 
 # Run main
