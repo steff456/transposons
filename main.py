@@ -135,36 +135,35 @@ def get_preds_scores_map(preds):
 
 def calculate_different_recalls(gt, preds, threshs):
     """Calculate precision at different recalls for the predictions."""
-    # precisions = []
-    # recalls = []
-    # for thresh in threshs:
-    pred = get_preds_scores_map(preds)
-    end = False
-    total_p = []
-    total_r = []
-    thresh = threshs[0]
-    while not end:
-        precision, recall, _ = calculate_metrics(gt, pred, thresh=thresh)
-        total_p.append(precision)
-        total_r.append(recall)
-        count = 0
-        for name in pred:
-            if pred[name]:
-                heappop(pred[name])
-                break
-            else:
-                count += 1
-        if count == len(pred):
-            end = True
-        # precisions.append(total_p)
-        # recalls.append(total_r)
-    return total_p, total_r
+    precisions = []
+    recalls = []
+    for thresh in threshs:
+        pred = get_preds_scores_map(preds)
+        end = False
+        total_p = []
+        total_r = []
+        while not end:
+            precision, recall, _ = calculate_metrics(gt, pred, thresh=thresh)
+            total_p.append(precision)
+            total_r.append(recall)
+            count = 0
+            for name in pred:
+                if pred[name]:
+                    heappop(pred[name])
+                    break
+                else:
+                    count += 1
+            if count == len(pred):
+                end = True
+            precisions.append(total_p)
+            recalls.append(total_r)
+    return precisions, recalls
 
 
 def plot_PR(precisions, recalls, threshs):
     """Plot precision-recall curve."""
-    # for recall, precision, thresh in zip(precisions, recalls, threshs):
-    plt.plot(recalls, precisions, label=threshs[0])
+    for precision, recall, thresh in zip(precisions, recalls, threshs):
+        plt.plot(recall, precision, label=thresh)
     plt.xlabel('Recall')
     plt.ylabel('Precision')
     plt.title('Precision Recall Curve for Transposon Detection')
@@ -186,7 +185,7 @@ def main():
 
     gt = process_file(args.gt)
     pred = process_file(args.pred, mode='pred')
-    threshs = [0.2]
+    threshs = [0.2, 0.3, 0.4, 0.5]
     total_p, total_r = calculate_different_recalls(gt, pred, threshs)
     plot_PR(total_p, total_r, threshs)
 
