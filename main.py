@@ -150,13 +150,13 @@ def calculate_different_recalls(gt, preds, threshs):
             for name in pred:
                 if pred[name]:
                     heappop(pred[name])
-                    break
+                    # break
                 else:
                     count += 1
             if count == len(pred):
                 end = True
-            precisions.append(total_p)
-            recalls.append(total_r)
+        precisions.append(total_p)
+        recalls.append(total_r)
     return precisions, recalls
 
 
