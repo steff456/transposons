@@ -4,11 +4,11 @@ from heapq import heappush, heappop
 import matplotlib.pyplot as plt
 from models.transposon import Transposon
 from utils.arguments import get_args
-
+import pdb
 
 def process_file(filename, mode='gt'):
     """Process the groundtruth/predictions file."""
-    print('Processing {} as groundtruth'.format(filename))
+    print('Processing {} as {}'.format(filename, mode))
     f = open(filename, 'r')
     LTRs = {}
     act_name = ''
@@ -67,7 +67,7 @@ def get_single_instance_results(gts, preds, thresh):
     return tp, fp, fn
 
 
-def calculate_metrics(gt, pred, thresh=0.5):
+def calculate_metrics(gt, pred, thresh=0.5, verbose=False):
     """Calculate the cumulative PR values for different thresholds."""
     names = list(set(gt.keys()).union(set(pred.keys())))
     cum_tp, cum_fp, cum_fn = 0, 0, 0
@@ -83,25 +83,27 @@ def calculate_metrics(gt, pred, thresh=0.5):
         tp, fp, fn = get_single_instance_results(act_gt, act_pred, thresh)
         precision = calculate_precision(tp, fp)
         recall = calculate_recall(tp, fn)
-        print('----------- {} -----------'.format(seq_name))
-        print('TP:', tp, 'FP:', fp, 'FN:', fn)
-        print('precision', precision)
-        print('recall', recall)
-        print('F-measure', calculate_fmeasure(precision, recall))
-        print('-----------')
+        if verbose:
+            print('----------- {} -----------'.format(seq_name))
+            print('TP:', tp, 'FP:', fp, 'FN:', fn)
+            print('precision', precision)
+            print('recall', recall)
+            print('F-measure', calculate_fmeasure(precision, recall))
+            print('-----------')
         cum_tp += tp
         cum_fp += fp
         cum_fn += fn
     precision = calculate_precision(cum_tp, cum_fp)
     recall = calculate_recall(cum_tp, cum_fn)
     fmeasure = calculate_fmeasure(precision, recall)
-    print('-----------')
-    print('TP:', cum_tp, 'FP:', cum_fp, 'FN:', cum_fn)
-    print('threshold', thresh)
-    print('precision', precision)
-    print('recall', recall)
-    print('F-measure', fmeasure)
-    print('-----------')
+    if verbose:
+        print('-----------')
+        print('TP:', cum_tp, 'FP:', cum_fp, 'FN:', cum_fn)
+        print('threshold', thresh)
+        print('precision', precision)
+        print('recall', recall)
+        print('F-measure', fmeasure)
+        print('-----------')
     return precision, recall, fmeasure
 
 
@@ -140,8 +142,9 @@ def calculate_different_recalls(gt, preds, threshs):
     end = False
     total_p = []
     total_r = []
+    thresh = threshs[0]
     while not end:
-        precision, recall, _ = calculate_metrics(gt, pred, threshs[0])
+        precision, recall, _ = calculate_metrics(gt, pred, thresh=thresh)
         total_p.append(precision)
         total_r.append(recall)
         count = 0
