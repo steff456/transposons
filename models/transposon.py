@@ -45,6 +45,14 @@ class Transposon():
         """Get size of the element."""
         return self.last - self.first + 1
 
+    def __gt__(self, transposon):
+        """Return the comparison of the scores with other instance."""
+        return self.score > transposon.score
+
+    def __eq__(self, transposon):
+        """Return the equality comparison of scores with other instance."""
+        return self.score == transposon.score
+
     def __str__(self):
-        """Write the transposon data as string"""
-        return self.sequence_name + '\t' + self.first + '\t' + self.last
+        """Write the transposon data as string."""
+        return '{}\t{}\t{}'.format(self.sequence_name, self.first, self.last)

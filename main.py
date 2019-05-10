@@ -1,6 +1,6 @@
 """Evaluation code for LTR."""
 import numpy as np
-from heapq import heappush
+from heapq import heappush, heappop
 import matplotlib.pyplot as plt
 from models.transposon import Transposon
 from utils.arguments import get_args
@@ -39,6 +39,8 @@ def get_single_instance_results(gts, preds, thresh):
     pred_index = []
     for x, pred in enumerate(preds):
         for y, gt in enumerate(gts):
+            if y == 0:
+                pred = pred[1]
             act_overlap = pred.get_overlap(gt)
             IoU = act_overlap/(len(pred) + len(gt) - act_overlap)
             if IoU >= thresh:
@@ -92,13 +94,15 @@ def calculate_metrics(gt, pred, thresh=0.5):
         cum_fn += fn
     precision = calculate_precision(cum_tp, cum_fp)
     recall = calculate_recall(cum_tp, cum_fn)
+    fmeasure = calculate_fmeasure(precision, recall)
     print('-----------')
     print('TP:', cum_tp, 'FP:', cum_fp, 'FN:', cum_fn)
     print('threshold', thresh)
     print('precision', precision)
     print('recall', recall)
-    print('F-measure', calculate_fmeasure(precision, recall))
+    print('F-measure', fmeasure)
     print('-----------')
+    return precision, recall, fmeasure
 
 
 def calculate_precision(tp, fp):
@@ -112,6 +116,7 @@ def calculate_recall(tp, fn):
 
 
 def calculate_fmeasure(precision, recall):
+    """Calculate F-measure."""
     return (2*precision*recall)/(precision + recall + 1e-9)
 
 
@@ -126,16 +131,43 @@ def get_preds_scores_map(preds):
     return genome_scores
 
 
-def plot_PR(precisions, recalls):
+def calculate_different_recalls(gt, preds, threshs):
+    """Calculate precision at different recalls for the predictions."""
+    # precisions = []
+    # recalls = []
+    # for thresh in threshs:
+    pred = get_preds_scores_map(preds)
+    end = False
+    total_p = []
+    total_r = []
+    while not end:
+        precision, recall, _ = calculate_metrics(gt, pred, threshs[0])
+        total_p.append(precision)
+        total_r.append(recall)
+        count = 0
+        for name in pred:
+            if pred[name]:
+                heappop(pred[name])
+                break
+            else:
+                count += 1
+        if count == len(pred):
+            end = True
+        # precisions.append(total_p)
+        # recalls.append(total_r)
+    return total_p, total_r
+
+
+def plot_PR(precisions, recalls, threshs):
     """Plot precision-recall curve."""
-    print(precisions)
-    print(recalls)
-    plt.plot(recalls, precisions, 'ro')
+    # for recall, precision, thresh in zip(precisions, recalls, threshs):
+    plt.plot(recalls, precisions, label=threshs[0])
     plt.xlabel('Recall')
     plt.ylabel('Precision')
     plt.title('Precision Recall Curve for Transposon Detection')
     plt.xlim(0, 1)
     plt.ylim(0, 1)
+    plt.legend(loc='best')
     plt.show()
 
 
@@ -151,8 +183,9 @@ def main():
 
     gt = process_file(args.gt)
     pred = process_file(args.pred, mode='pred')
-
-    calculate_metrics(gt, pred)
+    threshs = [0.2]
+    total_p, total_r = calculate_different_recalls(gt, pred, threshs)
+    plot_PR(total_p, total_r, threshs)
 
 
 # Run main
