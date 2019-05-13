@@ -140,10 +140,11 @@ def calculate_different_recalls(gt, preds, threshs):
     for thresh in threshs:
         pred = get_preds_scores_map(preds)
         end = False
+        first = True
         total_p = []
         total_r = []
         while not end:
-            precision, recall, _ = calculate_metrics(gt, pred, thresh=thresh)
+            precision, recall, fm = calculate_metrics(gt, pred, thresh=thresh)
             total_p.append(precision)
             total_r.append(recall)
             count = 0
@@ -155,6 +156,12 @@ def calculate_different_recalls(gt, preds, threshs):
                     count += 1
             if count == len(pred):
                 end = True
+            if first:
+                print('-------- Threshold {} ---------'.format(thresh))
+                print('Precision: {}'.format(precision))
+                print('Recall: {}'.format(recall))
+                print('Fmeasure: {}'.format(fm))
+                first = False
         precisions.append(total_p)
         recalls.append(total_r)
     return precisions, recalls
