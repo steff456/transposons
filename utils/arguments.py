@@ -9,7 +9,7 @@ def get_args():
         description='Evaluation arguments for LTR elements.')
 
     # Personal settings
-    pred = '/Users/tefa/Documents/Transposones/Data/results/yeast_STR.txt'
+    pred = '/Users/tefa/Documents/Transposones/Data/results/yeast_noSTR.txt'
     gt = '/Users/tefa/Documents/Transposones/Data/yeast/' + \
          'gt_transposons.txt'
 
