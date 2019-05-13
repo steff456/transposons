@@ -185,7 +185,7 @@ def main():
 
     gt = process_file(args.gt)
     pred = process_file(args.pred, mode='pred')
-    threshs = [0.2, 0.3, 0.4, 0.5]
+    threshs = [0.5, 0.8, 0.9]
     total_p, total_r = calculate_different_recalls(gt, pred, threshs)
     plot_PR(total_p, total_r, threshs)
 
