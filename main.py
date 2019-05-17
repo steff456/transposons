@@ -6,6 +6,7 @@ from models.transposon import Transposon
 from utils.arguments import get_args
 import pdb
 
+
 def process_file(filename, mode='gt'):
     """Process the groundtruth/predictions file."""
     print('Processing {} as {}'.format(filename, mode))
@@ -39,8 +40,6 @@ def get_single_instance_results(gts, preds, thresh):
     pred_index = []
     for x, pred in enumerate(preds):
         for y, gt in enumerate(gts):
-            if y == 0:
-                pred = pred[1]
             act_overlap = pred.get_overlap(gt)
             IoU = act_overlap/(len(pred) + len(gt) - act_overlap)
             if IoU >= thresh:
@@ -67,23 +66,25 @@ def get_single_instance_results(gts, preds, thresh):
     return tp, fp, fn
 
 
-def calculate_metrics(gt, pred, thresh=0.5, verbose=False):
+def calculate_metrics(gt, pred, thresh=0.5, verbose=True):
     """Calculate the cumulative PR values for different thresholds."""
     names = list(set(gt.keys()).union(set(pred.keys())))
-    cum_tp, cum_fp, cum_fn = 0, 0, 0
+    cum_tp, cum_fp, cum_fn, total_p, total_gt = 0, 0, 0, 0, 0
     for seq_name in names:
         if seq_name not in pred:
             cum_fn += len(gt[seq_name])
+            total_gt += len(gt[seq_name])
             continue
         elif seq_name not in gt:
             cum_fp += len(pred[seq_name])
+            total_p += len(pred[seq_name])
             continue
         act_gt = gt[seq_name]
         act_pred = pred[seq_name]
         tp, fp, fn = get_single_instance_results(act_gt, act_pred, thresh)
-        precision = calculate_precision(tp, fp)
-        recall = calculate_recall(tp, fn)
-        if verbose:
+        if False:
+            precision = calculate_precision(tp, fp)
+            recall = calculate_recall(tp, fn)
             print('----------- {} -----------'.format(seq_name))
             print('TP:', tp, 'FP:', fp, 'FN:', fn)
             print('precision', precision)
@@ -93,12 +94,15 @@ def calculate_metrics(gt, pred, thresh=0.5, verbose=False):
         cum_tp += tp
         cum_fp += fp
         cum_fn += fn
+        total_p += len(pred[seq_name])
+        total_gt += len(gt[seq_name])
     precision = calculate_precision(cum_tp, cum_fp)
     recall = calculate_recall(cum_tp, cum_fn)
     fmeasure = calculate_fmeasure(precision, recall)
     if verbose:
         print('-----------')
         print('TP:', cum_tp, 'FP:', cum_fp, 'FN:', cum_fn)
+        print('Total pred:', total_p, 'Total gt:', total_gt)
         print('threshold', thresh)
         print('precision', precision)
         print('recall', recall)
@@ -133,44 +137,35 @@ def get_preds_scores_map(preds):
     return genome_scores
 
 
-def calculate_different_recalls(gt, preds, threshs):
+def calculate_different_recalls_single_thresh(gt, preds, thresh, scores):
     """Calculate precision at different recalls for the predictions."""
     precisions = []
     recalls = []
-    for thresh in threshs:
-        pred = get_preds_scores_map(preds)
-        end = False
-        first = True
+    for score in scores:
+        # pred = get_preds_scores_map(preds)
+        pred = preds
         total_p = []
         total_r = []
-        while not end:
-            precision, recall, fm = calculate_metrics(gt, pred, thresh=thresh)
-            total_p.append(precision)
-            total_r.append(recall)
-            count = 0
-            for name in pred:
-                if pred[name]:
+        for name in pred:
+            for transposon in pred[name]:
+                if transposon.score < score:
                     heappop(pred[name])
-                    # break
-                else:
-                    count += 1
-            if count == len(pred):
-                end = True
-            if first:
-                print('-------- Threshold {} ---------'.format(thresh))
-                print('Precision: {}'.format(precision))
-                print('Recall: {}'.format(recall))
-                print('Fmeasure: {}'.format(fm))
-                first = False
-        precisions.append(total_p)
-        recalls.append(total_r)
+        precision, recall, fm = calculate_metrics(gt, pred, thresh=thresh)
+        total_p.append(precision)
+        total_r.append(recall)
+        print('-------- Score {} ---------'.format(score))
+        print('Precision: {}'.format(precision))
+        print('Recall: {}'.format(recall))
+        print('Fmeasure: {}'.format(fm))
+        precisions.append(precision)
+        recalls.append(recall)
     return precisions, recalls
 
 
-def plot_PR(precisions, recalls, threshs):
+def plot_PR(precisions, recalls, threshs=0.5):
     """Plot precision-recall curve."""
-    for precision, recall, thresh in zip(precisions, recalls, threshs):
-        plt.plot(recall, precision, label=thresh)
+    # for precision, recall, thresh in zip(precisions, recalls, threshs):
+    plt.plot(recalls, precisions, label=threshs)
     plt.xlabel('Recall')
     plt.ylabel('Precision')
     plt.title('Precision Recall Curve for Transposon Detection')
@@ -192,9 +187,12 @@ def main():
 
     gt = process_file(args.gt)
     pred = process_file(args.pred, mode='pred')
-    threshs = [0.5, 0.8, 0.9]
-    total_p, total_r = calculate_different_recalls(gt, pred, threshs)
-    plot_PR(total_p, total_r, threshs)
+    # threshs = [0.5, 0.6, 0.7, 0.8, 0.9]
+    scores = [0, 2000, 3000, 5000, 8000, 9000, 10000]
+    scores = np.linspace(0, 16000, 5)
+    total_p, total_r = calculate_different_recalls_single_thresh(gt, pred,
+                                                                 0.5, scores)
+    plot_PR(total_p, total_r, [0.5])
 
 
 # Run main
