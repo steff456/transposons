@@ -1,10 +1,11 @@
 """Evaluation code for LTR."""
 import numpy as np
-from heapq import heappush, heappop
 import matplotlib.pyplot as plt
-from models.transposon import Transposon
+import sklearn.metrics as metrics
+from heapq import heappush, heappop
+
 from utils.arguments import get_args
-import pdb
+from models.transposon import Transposon
 
 
 def process_file(filename, mode='gt'):
@@ -108,7 +109,7 @@ def calculate_metrics(gt, pred, thresh=0.5, verbose=True):
         print('recall', recall)
         print('F-measure', fmeasure)
         print('-----------')
-    return precision, recall, fmeasure
+    return precision, recall, fmeasure, cum_fp, cum_tp
 
 
 def calculate_precision(tp, fp):
@@ -141,6 +142,8 @@ def calculate_different_recalls_single_thresh(gt, preds, thresh, scores):
     """Calculate precision at different recalls for the predictions."""
     precisions = []
     recalls = []
+    false_positives = []
+    true_positives = []
     for score in scores:
         # pred = get_preds_scores_map(preds)
         pred = preds
@@ -150,7 +153,8 @@ def calculate_different_recalls_single_thresh(gt, preds, thresh, scores):
             for transposon in pred[name]:
                 if transposon.score < score:
                     heappop(pred[name])
-        precision, recall, fm = calculate_metrics(gt, pred, thresh=thresh)
+        precision, recall, fm, fp, tp = calculate_metrics(
+            gt, pred, thresh=thresh)
         total_p.append(precision)
         total_r.append(recall)
         print('-------- Score {} ---------'.format(score))
@@ -159,7 +163,9 @@ def calculate_different_recalls_single_thresh(gt, preds, thresh, scores):
         print('Fmeasure: {}'.format(fm))
         precisions.append(precision)
         recalls.append(recall)
-    return precisions, recalls
+        false_positives.append(fp)
+        true_positives.append(tp)
+    return precisions, recalls, false_positives, true_positives
 
 
 def plot_PR(precisions, recalls, threshs=0.5):
@@ -172,6 +178,15 @@ def plot_PR(precisions, recalls, threshs=0.5):
     plt.xlim(0, 1)
     plt.ylim(0, 1)
     plt.legend(loc='best')
+    plt.show()
+
+
+def plot_ROC(fpr, tpr):
+    """Plot ROC curve."""
+    roc_auc = metrics.auc(fpr, tpr)
+    display = metrics.RocCurveDisplay(fpr=fpr, tpr=tpr, roc_auc=roc_auc,
+                                      estimator_name='TransposonFinder')
+    display.plot()
     plt.show()
 
 
@@ -190,9 +205,10 @@ def main():
     # threshs = [0.5, 0.6, 0.7, 0.8, 0.9]
     scores = [0, 2000, 3000, 5000, 8000, 9000, 10000]
     scores = np.linspace(0, 16000, 5)
-    total_p, total_r = calculate_different_recalls_single_thresh(gt, pred,
-                                                                 0.5, scores)
+    total_p, total_r, fps, tps = (
+        calculate_different_recalls_single_thresh(gt, pred, 0.5, scores))
     plot_PR(total_p, total_r, [0.5])
+    plot_ROC(fps, tps)
 
 
 # Run main

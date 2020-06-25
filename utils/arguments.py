@@ -9,9 +9,9 @@ def get_args():
         description='Evaluation arguments for LTR elements.')
 
     # Personal settings
-    pred = '/Users/tefa/Documents/Transposones/Data/results/1000_STR.txt'
+    pred = '/Users/tefa/Documents/Transposones/Data/results/yeast/output_jorge.txt'
     gt = '/Users/tefa/Documents/Transposones/Data/yeast/' + \
-         'gt_transposons.txt'
+         'Reference/Output/gt_transposons.txt'
 
     parser.add_argument('--pred', type=str, default=pred,
                         help='path to the prediction file')
